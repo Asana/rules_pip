@@ -11,8 +11,7 @@ def _execute(repository_ctx, arguments):
 def _pip_import_impl(repository_ctx):
     """Core implementation of pip_import."""
     repository_ctx.file("BUILD", "")
-    repository_ctx.symlink(repository_ctx.attr.requirements, "requirements.in")
-    reqs = repository_ctx.read("requirements.in")
+    reqs = repository_ctx.read(repository_ctx.attr.requirements)
 
     # make a copy for compile
     repository_ctx.file("requirements.txt", content = reqs, executable = False)
@@ -26,15 +25,15 @@ def _pip_import_impl(repository_ctx):
             "--no-emit-find-links",
             "--no-header",
             "--no-index",
-            "--output-file",
+            "--no-annotate",
             repository_ctx.path("requirements.txt"),
-            repository_ctx.path("requirements.in"),
         ])
         if result.return_code:
             fail("pip_compile failed: %s (%s)" % (result.stdout, result.stderr))
 
     result = _execute(repository_ctx, [
         repository_ctx.attr.python_interpreter,
+        "-s",
         repository_ctx.path(repository_ctx.attr._script),
         "--name",
         repository_ctx.attr.name,
@@ -87,6 +86,7 @@ def _whl_impl(repository_ctx):
 
     args = [
         repository_ctx.attr.python_interpreter,
+        "-s",
         repository_ctx.path(repository_ctx.attr._script),
         "--requirements",
         repository_ctx.attr.requirements_repo,
